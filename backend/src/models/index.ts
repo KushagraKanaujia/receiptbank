@@ -7,6 +7,7 @@ import Receipt from './Receipt';
 import Badge from './Badge';
 import DailyChallenge from './DailyChallenge';
 import Company from './Company';
+import Withdrawal from './Withdrawal';
 
 // Set up associations
 User.hasMany(ConnectedService, {
@@ -97,7 +98,18 @@ DailyChallenge.belongsTo(User, {
   as: 'user',
 });
 
-export { User, ConnectedService, DataAccessPermission, AuditLog, Transaction, Receipt, Badge, DailyChallenge, Company };
+// Withdrawal associations
+User.hasMany(Withdrawal, {
+  foreignKey: 'userId',
+  as: 'withdrawals',
+});
+
+Withdrawal.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user',
+});
+
+export { User, ConnectedService, DataAccessPermission, AuditLog, Transaction, Receipt, Badge, DailyChallenge, Company, Withdrawal };
 
 export const syncDatabase = async (force: boolean = false): Promise<void> => {
   try {
@@ -110,6 +122,7 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
     await Receipt.sync({ force });
     await Badge.sync({ force });
     await DailyChallenge.sync({ force });
+    await Withdrawal.sync({ force });
     console.log('✓ Database models synchronized');
   } catch (error) {
     console.error('✗ Error synchronizing database:', error);

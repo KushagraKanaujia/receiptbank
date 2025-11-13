@@ -14,6 +14,7 @@ import dataRoutes from './routes/data';
 import marketplaceRoutes from './routes/marketplace';
 import syncRoutes from './routes/sync';
 import receiptsRoutes from './routes/receipts';
+import withdrawalsRoutes from './routes/withdrawals';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use('/api/data', authenticate as any, dataRoutes); // Protected data routes
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/receipts', receiptsRoutes);
+app.use('/api/withdrawals', withdrawalsRoutes);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

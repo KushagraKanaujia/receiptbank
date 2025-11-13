@@ -1,6 +1,10 @@
 import express, { Request, Response } from 'express';
 import { Receipt, User, Badge, DailyChallenge } from '../models';
 import { authenticate } from '../middleware/auth';
+import { upload } from '../middleware/upload';
+import { uploadImage, generateImageHash } from '../utils/imageStorage';
+import { extractReceiptData } from '../utils/ocr';
+import { detectFraud, shouldRateLimit } from '../utils/fraudDetection';
 import { Op } from 'sequelize';
 
 const router = express.Router();
@@ -11,44 +15,103 @@ interface AuthRequest extends Request {
     email: string;
     role?: 'user' | 'business';
   };
+  file?: any;
 }
 
-// Upload receipt
-router.post('/upload', authenticate as any, async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.user?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+// Upload receipt with image, OCR, and fraud detection
+router.post(
+  '/upload',
+  authenticate as any,
+  upload.single('receipt'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
 
-    const { imageUrl, merchant, category, amount } = req.body;
+      // Check if file was uploaded
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'Receipt image is required' });
+      }
 
-    if (!imageUrl) {
-      return res.status(400).json({ error: 'Image URL is required' });
-    }
+      // Rate limiting check
+      const isRateLimited = await shouldRateLimit(userId);
+      if (isRateLimited) {
+        return res.status(429).json({
+          error: 'Daily upload limit reached',
+          message: 'You can upload a maximum of 20 receipts per day. Please try again tomorrow.',
+        });
+      }
 
-    // Calculate earnings based on category
-    let earnings = 0.10; // Default
-    if (category === 'Electronics') {
-      earnings = 2.00;
-    } else if (category === 'Grocery') {
-      earnings = 0.12;
-    } else if (category === 'Restaurant') {
-      earnings = 0.05;
-    } else if (category === 'Retail') {
-      earnings = 0.15;
-    }
+      // Fraud detection
+      const fraudCheck = await detectFraud(userId, file.buffer);
+      if (!fraudCheck.passed) {
+        return res.status(403).json({
+          error: 'Upload blocked',
+          message: fraudCheck.reason,
+          fraudScore: fraudCheck.score,
+        });
+      }
 
-    // Create receipt
-    const receipt = await Receipt.create({
-      userId,
-      imageUrl,
-      merchant,
-      category,
-      amount: amount || 0,
-      earnings,
-      status: 'approved', // For now, auto-approve
-    });
+      // Upload image to Cloudflare R2
+      const imageUrl = await uploadImage(file.buffer, file.originalname);
+
+      // Generate image hash for duplicate detection
+      const imageHash = await generateImageHash(file.buffer);
+
+      // Extract receipt data using OCR (if MINDEE_API_KEY is configured)
+      let ocrData = null;
+      let merchant = 'Unknown';
+      let category = 'Other';
+      let amount = 0;
+
+      if (process.env.MINDEE_API_KEY) {
+        try {
+          ocrData = await extractReceiptData(imageUrl);
+          merchant = ocrData.merchant || 'Unknown';
+          category = ocrData.category || 'Other';
+          amount = ocrData.total || 0;
+        } catch (error) {
+          console.error('OCR failed, using defaults:', error);
+        }
+      }
+
+      // Calculate earnings based on category
+      let earnings = 0.10; // Default
+      if (category === 'Electronics') {
+        earnings = 2.00;
+      } else if (category === 'Grocery') {
+        earnings = 0.12;
+      } else if (category === 'Restaurant') {
+        earnings = 0.05;
+      } else if (category === 'Retail') {
+        earnings = 0.15;
+      }
+
+      // Apply fraud penalty (reduce earnings if suspicious but not blocked)
+      if (fraudCheck.score > 40) {
+        earnings = earnings * 0.5; // 50% penalty for suspicious activity
+      }
+
+      // Create receipt
+      const receipt = await Receipt.create({
+        userId,
+        imageUrl,
+        imageHash,
+        merchant,
+        category,
+        amount,
+        earnings,
+        status: fraudCheck.score > 50 ? 'pending' : 'approved',
+        ocrData,
+        metadata: {
+          fraudScore: fraudCheck.score,
+          fraudFlags: fraudCheck.flags,
+          ocrConfidence: ocrData?.confidence,
+        },
+      });
 
     // Update user stats
     const user = await User.findByPk(userId);

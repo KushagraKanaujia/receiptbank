@@ -7,7 +7,7 @@ interface UserAttributes {
   password?: string;
   firstName?: string;
   lastName?: string;
-  role: 'user' | 'business';
+  role: 'user' | 'business' | 'admin';
   isEmailVerified: boolean;
   totalEarnings: number;
   availableBalance: number;
@@ -27,7 +27,7 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public password?: string;
   public firstName?: string;
   public lastName?: string;
-  public role!: 'user' | 'business';
+  public role!: 'user' | 'business' | 'admin';
   public isEmailVerified!: boolean;
   public totalEarnings!: number;
   public availableBalance!: number;
@@ -68,7 +68,7 @@ User.init(
       allowNull: true,
     },
     role: {
-      type: DataTypes.ENUM('user', 'business'),
+      type: DataTypes.ENUM('user', 'business', 'admin'),
       defaultValue: 'user',
       allowNull: false,
     },

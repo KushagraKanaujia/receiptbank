@@ -9,7 +9,7 @@ const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '7d';
 export interface JwtPayload {
   userId: string;
   email: string;
-  role?: 'user' | 'business';
+  role?: 'user' | 'business' | 'admin';
 }
 
 /**

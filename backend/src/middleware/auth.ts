@@ -34,7 +34,7 @@ export const authenticate = (
 /**
  * Middleware to check if user has specific role
  */
-export const requireRole = (role: 'user' | 'business') => {
+export const requireRole = (role: 'user' | 'business' | 'admin') => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = (req as any).user as JwtPayload | undefined;
 

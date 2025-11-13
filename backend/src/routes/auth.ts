@@ -3,6 +3,7 @@ import { User } from '../models';
 import { generateToken } from '../utils/jwt';
 import { hashPassword, comparePassword } from '../utils/encryption';
 import { authLimiter } from '../middleware/rateLimiter';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import Joi from 'joi';
 
 const router = Router();
@@ -132,10 +133,9 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
  * GET /api/auth/me
  * Get current user profile
  */
-router.get('/me', async (req: Request, res: Response): Promise<void> => {
+router.get('/me', authenticate as any, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    // Note: This requires authenticate middleware to be applied in index.ts
-    const userId = (req as any).user?.userId;
+    const userId = req.user?.userId;
     if (!userId) {
       res.status(401).json({ error: 'Unauthorized' });
       return;

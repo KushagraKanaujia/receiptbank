@@ -1,96 +1,98 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+/**
+ * API Client for ReceiptBank Frontend
+ */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-class ApiClient {
-  private client: AxiosInstance;
+class APIClient {
+  private baseURL: string;
+  private token: string | null = null;
 
-  constructor() {
-    this.client = axios.create({
-      baseURL: API_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Add auth token to requests
-    this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('auth_token');
+    }
   }
 
-  // Auth endpoints
-  async register(data: { email: string; password: string; role?: string }) {
-    return this.client.post('/auth/register', data);
+  setToken(token: string) {
+    this.token = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth_token', token);
+    }
+  }
+
+  clearToken() {
+    this.token = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+    }
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        error: 'Request failed',
+        message: response.statusText,
+      }));
+      throw new Error(error.message || error.error || 'Request failed');
+    }
+
+    return response.json();
+  }
+
+  async register(data: { email: string; password: string; firstName?: string; lastName?: string }) {
+    const response = await this.request<{ token: string; user: any }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    if (response.token) this.setToken(response.token);
+    return response;
   }
 
   async login(data: { email: string; password: string }) {
-    return this.client.post('/auth/login', data);
+    const response = await this.request<{ token: string; user: any }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    if (response.token) this.setToken(response.token);
+    return response;
   }
 
   async getProfile() {
-    return this.client.get('/auth/me');
+    return this.request<{ user: any }>('/auth/me');
   }
 
-  // OAuth endpoints
-  async getConnectedServices() {
-    return this.client.get('/oauth/connected');
+  logout() {
+    this.clearToken();
   }
 
-  async disconnectService(provider: string) {
-    return this.client.delete(`/oauth/disconnect/${provider}`);
+  async getReceipts() {
+    return this.request<{ receipts: any[] }>('/receipts');
   }
 
-  // Data endpoints
-  async getData(provider: string, days: number = 30) {
-    return this.client.get(`/data/${provider}`, { params: { days } });
+  async getReceiptStats() {
+    return this.request<any>('/receipts/stats');
   }
 
-  async getAllData(days: number = 30) {
-    return this.client.get('/data', { params: { days } });
-  }
-
-  // Marketplace endpoints
-  async getMyRequests(status?: string) {
-    return this.client.get('/marketplace/my-requests', { params: { status } });
-  }
-
-  async requestAccess(data: any) {
-    return this.client.post('/marketplace/request-access', data);
-  }
-
-  async approvePermission(permissionId: string) {
-    return this.client.patch(`/marketplace/permissions/${permissionId}/approve`);
-  }
-
-  async rejectPermission(permissionId: string) {
-    return this.client.patch(`/marketplace/permissions/${permissionId}/reject`);
-  }
-
-  async revokePermission(permissionId: string) {
-    return this.client.delete(`/marketplace/permissions/${permissionId}/revoke`);
-  }
-
-  async getEarnings() {
-    return this.client.get('/marketplace/earnings');
-  }
-
-  // Sync endpoints
-  async triggerSync(provider: string) {
-    return this.client.post(`/sync/trigger/${provider}`);
-  }
-
-  async triggerSyncAll() {
-    return this.client.post('/sync/trigger-all');
-  }
-
-  async getSyncStatus() {
-    return this.client.get('/sync/status');
+  async getWithdrawals() {
+    return this.request<{ withdrawals: any[] }>('/withdrawals');
   }
 }
 
-export const api = new ApiClient();
+export const api = new APIClient(API_BASE_URL);
+export default api;

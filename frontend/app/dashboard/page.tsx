@@ -4,229 +4,121 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Receipt Card Component
-const ReceiptCard = ({ receipt, onView }: any) => {
-  const getReceiptIcon = (merchant: string) => {
-    const icons: any = {
-      'Target': '🎯',
-      'Costco': '🏪',
-      'Wingstop': '🍗',
-      'Walmart': '🛒',
-      'Whole Foods': '🥬',
-      'Starbucks': '☕',
-      'Apple Store': '🍎',
-      'CVS': '💊',
-      'Trader Joe\'s': '🛍️',
-      'McDonald\'s': '🍔'
-    };
-    return icons[merchant] || '🧾';
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: any = {
-      'Grocery': '#10b981',
-      'Restaurant': '#f59e0b',
-      'Retail': '#3b82f6',
-      'Electronics': '#8b5cf6',
-      'Pharmacy': '#ec4899',
-      'Coffee': '#78350f'
-    };
-    return colors[category] || '#6b7280';
+// Simple Receipt Card
+const ReceiptCard = ({ receipt }: any) => {
+  const icons: any = {
+    'Target': '🎯', 'Costco': '🏪', 'Wingstop': '🍗', 'Walmart': '🛒',
+    'Whole Foods': '🥬', 'Starbucks': '☕', 'Apple Store': '🍎',
+    'CVS': '💊', 'Trader Joe\'s': '🛍️', 'McDonald\'s': '🍔'
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: -2 }}
-      className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-4 hover:border-cyan-400/30 transition-all cursor-pointer group"
-      onClick={() => onView(receipt)}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="flex items-center justify-between p-4 backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl hover:border-green-500/30 transition-all"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3 flex-1">
-          <div className="text-3xl">{getReceiptIcon(receipt.merchant)}</div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-semibold text-white">{receipt.merchant}</h4>
-              {receipt.verified && (
-                <span className="text-green-400 text-xs">✓</span>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mb-2">{receipt.date} • {receipt.location}</p>
-            <div className="flex items-center gap-2">
-              <span
-                className="px-2 py-0.5 rounded-full text-xs font-medium border"
-                style={{
-                  backgroundColor: `${getCategoryColor(receipt.category)}20`,
-                  borderColor: `${getCategoryColor(receipt.category)}40`,
-                  color: getCategoryColor(receipt.category)
-                }}
-              >
-                {receipt.category}
-              </span>
-              <span className="text-xs text-gray-500">${receipt.total}</span>
-            </div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="flex items-center gap-1">
-            <span className="text-lg font-bold text-green-400">${receipt.earnings}</span>
-            {receipt.multiplier > 1 && (
-              <span className="text-xs text-yellow-400">×{receipt.multiplier}</span>
-            )}
-          </div>
-          <p className="text-xs text-gray-500">{receipt.status}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// Stats Card
-const StatsCard = ({ label, value, icon, color, subtitle }: any) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.02 }}
-      className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-6 overflow-hidden group"
-    >
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-      <div className="flex items-start justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-3xl">{icons[receipt.merchant] || '🧾'}</span>
         <div>
-          <p className="text-gray-400 text-sm mb-1">{label}</p>
-          <p className="text-3xl font-bold text-white mb-1">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
-        </div>
-        <div className="text-4xl opacity-50" style={{ color }}>
-          {icon}
+          <p className="text-white font-semibold">{receipt.merchant}</p>
+          <p className="text-xs text-gray-400">{receipt.date}</p>
         </div>
       </div>
-
-      <motion.div
-        className="absolute -bottom-5 -right-5 w-20 h-20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ background: `${color}30` }}
-      />
+      <div className="text-right">
+        <p className="text-xl font-bold text-green-400">+${receipt.earnings}</p>
+        {receipt.verified && <p className="text-xs text-green-400">✓ Verified</p>}
+      </div>
     </motion.div>
   );
 };
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
+  // Gamification State
   const [stats, setStats] = useState({
     totalEarnings: 147.50,
-    thisMonth: 23.80,
+    todayEarnings: 2.34,
+    streak: 5,
+    level: 'Silver',
     receiptsUploaded: 234,
-    pendingReview: 3,
-    avgPerReceipt: 0.63
+    nextLevelAt: 300
+  });
+
+  const [badges, setBadges] = useState([
+    { id: 1, name: '5 Day Streak', icon: '🔥', unlocked: true },
+    { id: 2, name: 'Electronics Hunter', icon: '📱', unlocked: true },
+    { id: 3, name: 'Century Club', icon: '💯', unlocked: true },
+    { id: 4, name: 'Top Earner', icon: '👑', unlocked: false }
+  ]);
+
+  const [dailyChallenge, setDailyChallenge] = useState({
+    title: 'Upload 3 receipts today',
+    progress: 1,
+    total: 3,
+    reward: '$0.50 bonus'
   });
 
   const [recentReceipts, setRecentReceipts] = useState([
     {
       id: 1,
       merchant: 'Target',
-      category: 'Retail',
-      total: '89.47',
       earnings: '0.15',
       date: 'Today, 2:34 PM',
-      location: 'San Francisco, CA',
-      status: 'Verified',
-      verified: true,
-      multiplier: 1
+      verified: true
     },
     {
       id: 2,
-      merchant: 'Whole Foods',
-      category: 'Grocery',
-      total: '156.23',
-      earnings: '0.08',
+      merchant: 'Starbucks',
+      earnings: '0.03',
       date: 'Today, 11:20 AM',
-      location: 'San Francisco, CA',
-      status: 'Verified',
-      verified: true,
-      multiplier: 1
+      verified: true
     },
     {
       id: 3,
       merchant: 'Apple Store',
-      category: 'Electronics',
-      total: '1,299.00',
       earnings: '2.50',
       date: 'Yesterday',
-      location: 'San Francisco, CA',
-      status: 'Verified',
-      verified: true,
-      multiplier: 2
-    },
-    {
-      id: 4,
-      merchant: 'Starbucks',
-      category: 'Coffee',
-      total: '12.45',
-      earnings: '0.03',
-      date: 'Yesterday',
-      location: 'San Francisco, CA',
-      status: 'Verified',
-      verified: true,
-      multiplier: 1
-    },
-    {
-      id: 5,
-      merchant: 'Costco',
-      category: 'Grocery',
-      total: '234.67',
-      earnings: '0.12',
-      date: '2 days ago',
-      location: 'San Francisco, CA',
-      status: 'Processing',
-      verified: false,
-      multiplier: 1
+      verified: true
     }
   ]);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setUser({ email: 'demo@datahub.com', name: 'Demo User' });
-    setLoading(false);
-  };
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     setUploading(true);
 
-    // Simulate upload
+    // Simulate upload with celebration
     setTimeout(() => {
-      const file = files[0];
       const newReceipt = {
         id: recentReceipts.length + 1,
         merchant: 'Trader Joe\'s',
-        category: 'Grocery',
-        total: '67.89',
         earnings: '0.09',
         date: 'Just now',
-        location: 'San Francisco, CA',
-        status: 'Processing',
-        verified: false,
-        multiplier: 1
+        verified: false
       };
 
       setRecentReceipts([newReceipt, ...recentReceipts]);
       setStats({
         ...stats,
-        receiptsUploaded: stats.receiptsUploaded + 1,
-        pendingReview: stats.pendingReview + 1
+        todayEarnings: stats.todayEarnings + 0.09,
+        totalEarnings: stats.totalEarnings + 0.09,
+        receiptsUploaded: stats.receiptsUploaded + 1
       });
+
+      // Update challenge progress
+      setDailyChallenge({
+        ...dailyChallenge,
+        progress: Math.min(dailyChallenge.progress + 1, dailyChallenge.total)
+      });
+
       setUploading(false);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
     }, 1500);
   };
 
@@ -249,244 +141,242 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    window.location.reload();
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#0d1117] to-[#0a0a0a] flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-16 h-16 border-4 border-cyan-500/30 border-t-cyan-400 rounded-full"
-        />
-      </div>
-    );
-  }
+  const progressToNextLevel = (stats.receiptsUploaded / stats.nextLevelAt) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a0a0a] via-[#0d1117] to-[#0a0a0a] relative overflow-hidden">
-      {/* Background effects */}
+      {/* Confetti Effect */}
+      <AnimatePresence>
+        {showConfetti && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1, rotate: 360 }}
+              className="text-9xl"
+            >
+              🎉
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-0 right-0 w-96 h-96 bg-green-500/5 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 10, repeat: Infinity }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.5, 0.3, 0.5],
-          }}
-          transition={{ duration: 10, repeat: Infinity, delay: 2 }}
         />
       </div>
 
-      {/* Grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,217,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,217,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,#000_70%,transparent_110%)]" />
-
       <div className="relative z-10">
-        {/* Header */}
-        <motion.header
-          initial={{ y: -100 }}
-          animate={{ y: 0 }}
-          className="backdrop-blur-xl bg-white/5 border-b border-white/10"
-        >
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-cyan-500 bg-clip-text text-transparent">
-                  ReceiptBank
-                </h1>
-                <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  <span className="text-xs text-green-400 font-medium">Live</span>
+        {/* Minimal Header */}
+        <header className="backdrop-blur-xl bg-white/5 border-b border-white/10">
+          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-cyan-500 bg-clip-text text-transparent">
+              ReceiptBank
+            </h1>
+            <div className="flex items-center gap-4">
+              {/* Streak Counter */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-full">
+                <span className="text-2xl">🔥</span>
+                <div>
+                  <p className="text-xs text-gray-400">Streak</p>
+                  <p className="text-sm font-bold text-orange-400">{stats.streak} days</p>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4">
-                <div className="hidden md:flex items-center gap-3 px-4 py-2 backdrop-blur-xl bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <span className="text-2xl">💰</span>
-                  <div>
-                    <p className="text-xs text-gray-400">Total Earnings</p>
-                    <p className="text-lg font-bold text-green-400">${stats.totalEarnings.toFixed(2)}</p>
-                  </div>
+              {/* Today's Earnings */}
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full">
+                <span className="text-2xl">💰</span>
+                <div>
+                  <p className="text-xs text-gray-400">Today</p>
+                  <p className="text-sm font-bold text-green-400">${stats.todayEarnings.toFixed(2)}</p>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white hover:border-cyan-400/50 transition-all duration-300"
-                >
-                  Logout
-                </motion.button>
               </div>
             </div>
           </div>
-        </motion.header>
+        </header>
 
         {/* Main Content */}
-        <main className="container mx-auto px-6 py-8">
-          {/* Upload Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
+        <main className="container mx-auto px-6 py-8 max-w-6xl">
+          {/* Hero Upload Section */}
+          <div className="mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-6"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                Hey! Upload a Receipt
+              </h2>
+              <p className="text-xl text-gray-400">Turn it into ${(0.02 + Math.random() * 0.5).toFixed(2)} instantly</p>
+            </motion.div>
+
+            {/* Giant Upload Button */}
             <div
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
-              className={`relative backdrop-blur-xl bg-gradient-to-r from-green-500/10 to-cyan-500/10 border-2 border-dashed rounded-2xl p-8 transition-all duration-300 ${
-                dragActive ? 'border-green-400 bg-green-500/20' : 'border-green-500/30 hover:border-green-400/50'
+              className={`relative backdrop-blur-xl bg-gradient-to-r from-green-500/20 to-cyan-500/20 border-4 border-dashed rounded-3xl p-12 transition-all duration-300 ${
+                dragActive ? 'border-green-400 scale-105' : 'border-green-500/40 hover:border-green-400/60'
               }`}
             >
-              <div className="text-center">
-                <motion.div
-                  animate={{ y: uploading ? [0, -10, 0] : 0 }}
-                  transition={{ duration: 0.6, repeat: uploading ? Infinity : 0 }}
-                  className="text-6xl mb-4"
-                >
-                  {uploading ? '⏳' : '📸'}
-                </motion.div>
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  {uploading ? 'Processing Receipt...' : 'Upload Your Receipts'}
-                </h3>
-                <p className="text-gray-400 mb-6">
-                  Take a photo or upload receipt images • Earn $0.02-$2.50 per receipt
-                </p>
+              <label className="cursor-pointer block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => handleFileUpload(e.target.files)}
+                  className="hidden"
+                  disabled={uploading}
+                />
 
-                <div className="flex items-center justify-center gap-4">
-                  <motion.label
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-8 py-3 bg-gradient-to-r from-green-500 to-cyan-500 rounded-lg text-white font-semibold cursor-pointer hover:from-green-400 hover:to-cyan-400 transition-all"
+                <div className="text-center">
+                  <motion.div
+                    animate={{
+                      y: uploading ? [0, -10, 0] : 0,
+                      rotate: uploading ? [0, 5, -5, 0] : 0
+                    }}
+                    transition={{ duration: 0.6, repeat: uploading ? Infinity : 0 }}
+                    className="text-8xl mb-6"
                   >
-                    📱 Take Photo / Upload
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => handleFileUpload(e.target.files)}
-                      className="hidden"
-                      disabled={uploading}
-                    />
-                  </motion.label>
+                    {uploading ? '⏳' : '📸'}
+                  </motion.div>
 
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-8 py-3 bg-white/5 border border-white/10 rounded-lg text-white font-semibold hover:border-cyan-400/50 transition-all"
-                  >
-                    📂 Bulk Upload
-                  </motion.button>
-                </div>
+                  <h3 className="text-3xl font-bold text-white mb-3">
+                    {uploading ? 'Processing...' : 'Take Photo or Upload'}
+                  </h3>
 
-                <div className="mt-6 flex items-center justify-center gap-8 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-green-400">✓</span>
-                    <span className="text-gray-400">Any Store</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-green-400">✓</span>
-                    <span className="text-gray-400">Instant Processing</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-green-400">✓</span>
-                    <span className="text-gray-400">Secure & Private</span>
-                  </div>
+                  <p className="text-gray-400 mb-6">
+                    {uploading ? 'Scanning your receipt...' : 'Any receipt from any store works!'}
+                  </p>
+
+                  {!uploading && (
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="inline-block px-12 py-5 bg-gradient-to-r from-green-500 to-cyan-500 rounded-2xl text-white text-2xl font-bold shadow-2xl shadow-green-500/50"
+                    >
+                      Click or Drop Here
+                    </motion.div>
+                  )}
                 </div>
-              </div>
+              </label>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Stats Grid */}
+          {/* Level & Progress */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8"
+            className="mb-8 backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-2xl p-6"
           >
-            <StatsCard
-              label="Total Earnings"
-              value={`$${stats.totalEarnings.toFixed(2)}`}
-              icon="💰"
-              color="#10b981"
-              subtitle="All time"
-            />
-            <StatsCard
-              label="This Month"
-              value={`$${stats.thisMonth.toFixed(2)}`}
-              icon="📅"
-              color="#0ea5e9"
-              subtitle="+15.3% vs last month"
-            />
-            <StatsCard
-              label="Receipts"
-              value={stats.receiptsUploaded}
-              icon="🧾"
-              color="#8b5cf6"
-              subtitle="Total uploaded"
-            />
-            <StatsCard
-              label="Avg/Receipt"
-              value={`$${stats.avgPerReceipt.toFixed(2)}`}
-              icon="📊"
-              color="#f59e0b"
-              subtitle="Your average"
-            />
-            <StatsCard
-              label="Pending"
-              value={stats.pendingReview}
-              icon="⏳"
-              color="#6b7280"
-              subtitle="Being processed"
-            />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-4xl">⭐</span>
+                <div>
+                  <p className="text-xs text-gray-400">Your Level</p>
+                  <p className="text-2xl font-bold text-white">{stats.level}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-400">Progress to Gold</p>
+                <p className="text-sm font-semibold text-white">{stats.receiptsUploaded}/{stats.nextLevelAt} receipts</p>
+              </div>
+            </div>
+            <div className="relative h-3 bg-white/10 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progressToNextLevel}%` }}
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+              />
+            </div>
+          </motion.div>
+
+          {/* Daily Challenge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-8 backdrop-blur-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-6"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-4xl">🎯</span>
+                <div>
+                  <p className="text-yellow-400 font-bold mb-1">Daily Challenge</p>
+                  <p className="text-white text-lg">{dailyChallenge.title}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-green-400 font-bold">{dailyChallenge.reward}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all"
+                  style={{ width: `${(dailyChallenge.progress / dailyChallenge.total) * 100}%` }}
+                />
+              </div>
+              <span className="text-white font-semibold">{dailyChallenge.progress}/{dailyChallenge.total}</span>
+            </div>
+          </motion.div>
+
+          {/* Badges */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mb-8"
+          >
+            <h3 className="text-xl font-bold text-white mb-4">Your Badges</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {badges.map((badge, index) => (
+                <motion.div
+                  key={badge.id}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 + (index * 0.1) }}
+                  className={`backdrop-blur-xl border rounded-xl p-4 text-center ${
+                    badge.unlocked
+                      ? 'bg-white/5 border-white/20'
+                      : 'bg-white/5 border-white/10 opacity-50'
+                  }`}
+                >
+                  <div className="text-4xl mb-2">{badge.icon}</div>
+                  <p className="text-white text-sm font-semibold">{badge.name}</p>
+                  {badge.unlocked && <p className="text-xs text-green-400 mt-1">✓ Unlocked</p>}
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
 
           {/* Recent Receipts */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Recent Receipts</h2>
-                <p className="text-gray-400 text-sm">Your latest uploads and earnings</p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push('/analytics')}
-                  className="px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-lg text-cyan-400 hover:from-cyan-500/30 hover:to-blue-500/30 transition-all duration-300"
-                >
-                  📈 View All
-                </motion.button>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Recent Uploads</h3>
+              <button
+                onClick={() => router.push('/analytics')}
+                className="text-cyan-400 hover:text-cyan-300 text-sm font-semibold"
+              >
+                View All →
+              </button>
             </div>
-
             <div className="space-y-3">
-              {recentReceipts.map((receipt, index) => (
-                <motion.div
-                  key={receipt.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * index }}
-                >
-                  <ReceiptCard
-                    receipt={receipt}
-                    onView={(r: any) => console.log('View receipt', r)}
-                  />
-                </motion.div>
+              {recentReceipts.map((receipt) => (
+                <ReceiptCard key={receipt.id} receipt={receipt} />
               ))}
             </div>
           </motion.div>
@@ -495,69 +385,34 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/marketplace')}
-              className="p-6 backdrop-blur-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl text-left group hover:border-purple-400/50 transition-all duration-300"
-            >
-              <div className="text-2xl mb-2">🛒</div>
-              <h3 className="text-purple-400 font-semibold mb-1 group-hover:text-purple-300 transition-colors">Data Marketplace</h3>
-              <p className="text-gray-400 text-sm">See what companies are buying</p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/analytics')}
-              className="p-6 backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl text-left group hover:border-cyan-400/30 transition-all duration-300"
-            >
-              <div className="text-2xl mb-2">📊</div>
-              <h3 className="text-white font-semibold mb-1 group-hover:text-cyan-400 transition-colors">Earnings Analytics</h3>
-              <p className="text-gray-400 text-sm">Track your income trends</p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/enterprise')}
-              className="p-6 backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl text-left group hover:border-cyan-400/30 transition-all duration-300"
-            >
-              <div className="text-2xl mb-2">🏢</div>
-              <h3 className="text-white font-semibold mb-1 group-hover:text-cyan-400 transition-colors">For Businesses</h3>
-              <p className="text-gray-400 text-sm">Buy receipt data</p>
-            </motion.button>
-          </motion.div>
-
-          {/* Value Indicator Banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="mt-8 p-6 backdrop-blur-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl"
+            className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">💡</div>
-                <div>
-                  <h3 className="text-yellow-400 font-semibold mb-1">Receipt Value Guide</h3>
-                  <div className="text-sm text-gray-400 space-y-1">
-                    <p>📱 Electronics (Apple, Best Buy): $1.50-2.50 • 🛒 Retail (Target, Walmart): $0.08-0.15</p>
-                    <p>🥬 Grocery (Whole Foods, Costco): $0.08-0.12 • ☕ Coffee/Fast Food: $0.02-0.05</p>
-                  </div>
-                </div>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg text-yellow-400 font-semibold hover:from-yellow-500/30 hover:to-orange-500/30 transition-all"
-              >
-                Learn More
-              </motion.button>
-            </div>
+            <button
+              onClick={() => router.push('/marketplace')}
+              className="p-6 backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl hover:border-purple-400/50 transition-all text-left"
+            >
+              <div className="text-3xl mb-2">🛒</div>
+              <p className="text-white font-semibold">Marketplace</p>
+              <p className="text-xs text-gray-400 mt-1">See who's buying data</p>
+            </button>
+
+            <button
+              onClick={() => router.push('/analytics')}
+              className="p-6 backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl hover:border-cyan-400/50 transition-all text-left"
+            >
+              <div className="text-3xl mb-2">📊</div>
+              <p className="text-white font-semibold">Analytics</p>
+              <p className="text-xs text-gray-400 mt-1">Track your earnings</p>
+            </button>
+
+            <button
+              className="p-6 backdrop-blur-xl bg-gradient-to-r from-green-500/20 to-cyan-500/20 border border-green-500/30 rounded-xl hover:border-green-400/50 transition-all text-left"
+            >
+              <div className="text-3xl mb-2">💰</div>
+              <p className="text-green-400 font-bold">${stats.totalEarnings.toFixed(2)}</p>
+              <p className="text-xs text-gray-400 mt-1">Cash Out</p>
+            </button>
           </motion.div>
         </main>
       </div>

@@ -13,6 +13,7 @@ import oauthRoutes from './routes/oauth';
 import dataRoutes from './routes/data';
 import marketplaceRoutes from './routes/marketplace';
 import syncRoutes from './routes/sync';
+import receiptsRoutes from './routes/receipts';
 
 dotenv.config();
 
@@ -45,9 +46,10 @@ app.get('/health', (_req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/oauth', oauthRoutes);
-app.use('/api/data', authenticate, dataRoutes); // Protected data routes
+app.use('/api/data', authenticate as any, dataRoutes); // Protected data routes
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/receipts', receiptsRoutes);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -59,7 +61,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 });
 
 // 404 handler
-app.use((_req, res) => {
+app.use((_req: express.Request, res: express.Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 

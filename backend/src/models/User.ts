@@ -10,11 +10,16 @@ interface UserAttributes {
   role: 'user' | 'business';
   isEmailVerified: boolean;
   totalEarnings: number;
+  availableBalance: number;
+  streakCount: number;
+  level: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+  receiptsUploaded: number;
+  lastUploadDate?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'totalEarnings' | 'isEmailVerified'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'totalEarnings' | 'availableBalance' | 'isEmailVerified' | 'streakCount' | 'level' | 'receiptsUploaded'> {}
 
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: string;
@@ -25,6 +30,11 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public role!: 'user' | 'business';
   public isEmailVerified!: boolean;
   public totalEarnings!: number;
+  public availableBalance!: number;
+  public streakCount!: number;
+  public level!: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+  public receiptsUploaded!: number;
+  public lastUploadDate?: Date;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -69,6 +79,26 @@ User.init(
     totalEarnings: {
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
+    },
+    availableBalance: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+    },
+    streakCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    level: {
+      type: DataTypes.ENUM('Bronze', 'Silver', 'Gold', 'Platinum'),
+      defaultValue: 'Bronze',
+    },
+    receiptsUploaded: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    lastUploadDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
   {

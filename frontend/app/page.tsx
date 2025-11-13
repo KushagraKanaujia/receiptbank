@@ -7,9 +7,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Go directly to dashboard (no login required for demo)
     router.push('/dashboard');
-  }, []);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a0a] via-[#0d1117] to-[#0a0a0a]">

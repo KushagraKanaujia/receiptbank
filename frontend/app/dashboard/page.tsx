@@ -408,7 +408,6 @@ export default function DashboardPage() {
   }, []);
 
   const loadData = async () => {
-    // Skip auth for now - just show the UI with demo data
     setUser({ email: 'demo@datahub.com' });
     setServices([]);
     setStats({
@@ -420,7 +419,6 @@ export default function DashboardPage() {
   };
 
   const handleConnect = (provider: string) => {
-    // Simulate connection - show data modal immediately for demo
     setServices([...services, { provider, isActive: true }]);
     setStats({
       ...stats,
@@ -451,7 +449,6 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    // Refresh the page to reset demo
     window.location.reload();
   };
 

@@ -1,6 +1,6 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { Receipt, User, Badge, DailyChallenge } from '../models';
-import { authenticate } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 import { uploadImage, generateImageHash } from '../utils/imageStorage';
 import { extractReceiptData } from '../utils/ocr';
@@ -8,15 +8,6 @@ import { detectFraud, shouldRateLimit } from '../utils/fraudDetection';
 import { Op } from 'sequelize';
 
 const router = express.Router();
-
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    role?: 'user' | 'business';
-  };
-  file?: any;
-}
 
 // Upload receipt with image, OCR, and fraud detection
 router.post(

@@ -1,18 +1,10 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { User, Withdrawal } from '../models';
-import { authenticate } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import { sendPayout, validatePayPalEmail } from '../utils/paypal';
 import { Op } from 'sequelize';
 
 const router = express.Router();
-
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    role?: 'user' | 'business';
-  };
-}
 
 // Request a withdrawal
 router.post('/request', authenticate as any, async (req: AuthRequest, res: Response) => {

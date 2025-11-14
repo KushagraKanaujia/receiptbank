@@ -6,7 +6,6 @@ import Transaction from './Transaction';
 import Receipt from './Receipt';
 import Badge from './Badge';
 import DailyChallenge from './DailyChallenge';
-import Company from './Company';
 import Withdrawal from './Withdrawal';
 
 // Set up associations
@@ -109,7 +108,7 @@ Withdrawal.belongsTo(User, {
   as: 'user',
 });
 
-export { User, ConnectedService, DataAccessPermission, AuditLog, Transaction, Receipt, Badge, DailyChallenge, Company, Withdrawal };
+export { User, ConnectedService, DataAccessPermission, AuditLog, Transaction, Receipt, Badge, DailyChallenge, Withdrawal };
 
 export const syncDatabase = async (force: boolean = false): Promise<void> => {
   try {
@@ -118,7 +117,6 @@ export const syncDatabase = async (force: boolean = false): Promise<void> => {
     await DataAccessPermission.sync({ force });
     await AuditLog.sync({ force });
     await Transaction.sync({ force });
-    await Company.sync({ force });
     await Receipt.sync({ force });
     await Badge.sync({ force });
     await DailyChallenge.sync({ force });

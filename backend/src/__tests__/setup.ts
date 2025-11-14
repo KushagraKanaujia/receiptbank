@@ -1,14 +1,10 @@
 import dotenv from 'dotenv';
 
-// Load test environment variables
 dotenv.config({ path: '.env.test' });
 
-// Set test environment
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret-key-for-testing-only';
 process.env.ENCRYPTION_KEY = 'test-encryption-key-32-characters!';
-
-// Mock external services
 jest.mock('../utils/imageStorage', () => ({
   uploadImage: jest.fn().mockResolvedValue('https://test.cloudflare.com/test-image.jpg'),
   generateImageHash: jest.fn().mockReturnValue('test-hash-12345'),
@@ -43,7 +39,6 @@ jest.mock('../utils/fraudDetection', () => ({
   shouldRateLimit: jest.fn().mockResolvedValue(false),
 }));
 
-// Suppress console during tests
 global.console = {
   ...console,
   log: jest.fn(),

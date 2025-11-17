@@ -118,7 +118,7 @@ export class GoogleCalendarAdapter {
     const attendeeCounts: Record<string, number> = {};
 
     events.forEach((event) => {
-      // Calculate duration
+      // duration
       const start = new Date(event.start.dateTime);
       const end = new Date(event.end.dateTime);
       const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
@@ -134,7 +134,7 @@ export class GoogleCalendarAdapter {
       });
     });
 
-    // Get top attendees
+    // top attendees
     const topAttendees = Object.entries(attendeeCounts)
       .map(([email, count]) => ({ email, count }))
       .sort((a, b) => b.count - a.count)

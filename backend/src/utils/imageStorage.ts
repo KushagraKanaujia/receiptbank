@@ -29,13 +29,13 @@ export const uploadImage = async (buffer: Buffer, filename: string): Promise<str
       .jpeg({ quality: 85, progressive: true })
       .toBuffer();
 
-    // Generate unique filename
+    // unique filename
     const hash = crypto.createHash('sha256').update(optimizedBuffer).digest('hex').substring(0, 16);
     const timestamp = Date.now();
     const ext = filename.split('.').pop() || 'jpg';
     const key = `receipts/${timestamp}-${hash}.${ext}`;
 
-    // Upload to R2
+    // to R2
     await r2Client.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -79,18 +79,18 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
  */
 export const generateImageHash = async (buffer: Buffer): Promise<string> => {
   try {
-    // Generate perceptual hash using average hash algorithm
+    // perceptual hash using average hash algorithm
     const resized = await sharp(buffer)
       .resize(8, 8, { fit: 'fill' })
       .greyscale()
       .raw()
       .toBuffer();
 
-    // Calculate average
+    // average
     const pixels = new Uint8Array(resized);
     const avg = pixels.reduce((sum, val) => sum + val, 0) / pixels.length;
 
-    // Generate hash
+    // hash
     let hash = '';
     for (let i = 0; i < pixels.length; i++) {
       hash += pixels[i] > avg ? '1' : '0';

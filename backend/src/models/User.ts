@@ -57,7 +57,7 @@ User.init(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: true, // Allow null for OAuth-only users
+      allowNull: true,
     },
     firstName: {
       type: DataTypes.STRING,

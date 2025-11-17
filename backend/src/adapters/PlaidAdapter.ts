@@ -126,7 +126,7 @@ export class PlaidAdapter {
       this.getTransactions(startDate, endDate),
     ]);
 
-    // Calculate summary statistics
+    // summary statistics
     const totalBalance = accounts.reduce((sum, acc) => sum + acc.balances.current, 0);
 
     let totalIncome = 0;

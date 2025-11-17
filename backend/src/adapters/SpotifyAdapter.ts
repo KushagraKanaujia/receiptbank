@@ -100,7 +100,7 @@ export class SpotifyAdapter {
       this.getRecentlyPlayed(),
     ]);
 
-    // Calculate listening time
+    // listening time
     const totalListeningTime = recentlyPlayed.reduce(
       (sum, track) => sum + track.duration_ms,
       0

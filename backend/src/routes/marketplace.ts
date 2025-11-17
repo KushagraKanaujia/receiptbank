@@ -58,7 +58,7 @@ router.post(
         return;
       }
 
-      // Create access permission request
+      // access permission request
       const permission = await DataAccessPermission.create({
         userId,
         businessId,
@@ -173,7 +173,7 @@ router.patch(
         approvedAt: new Date(),
       });
 
-      // Create a transaction for the payment
+      // a transaction for the payment
       const platformFeePercent = 0.2; // 20% platform fee
       const platformFee = parseFloat(permission.price.toString()) * platformFeePercent;
       const netAmount = parseFloat(permission.price.toString()) - platformFee;

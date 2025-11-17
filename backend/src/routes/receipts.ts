@@ -9,7 +9,7 @@ import { Op } from 'sequelize';
 
 const router = express.Router();
 
-// Upload receipt with image, OCR, and fraud detection
+// receipt with image, OCR, and fraud detection
 router.post(
   '/upload',
   authenticate as any,
@@ -21,7 +21,7 @@ router.post(
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Check if file was uploaded
+      // file was uploaded
       const file = req.file;
       if (!file) {
         return res.status(400).json({ error: 'Receipt image is required' });
@@ -46,13 +46,13 @@ router.post(
         });
       }
 
-      // Upload image to Cloudflare R2
+      // image to Cloudflare R2
       const imageUrl = await uploadImage(file.buffer, file.originalname);
 
-      // Generate image hash for duplicate detection
+      // image hash for duplicate detection
       const imageHash = await generateImageHash(file.buffer);
 
-      // Extract receipt data using OCR (if MINDEE_API_KEY is configured)
+      // receipt data using OCR (if MINDEE_API_KEY is configured)
       let ocrData = null;
       let merchant = 'Unknown';
       let category = 'Other';
@@ -69,7 +69,7 @@ router.post(
         }
       }
 
-      // Calculate earnings based on category
+      // earnings based on category
       let earnings = 0.10; // Default
       if (category === 'Electronics') {
         earnings = 2.00;
@@ -81,12 +81,12 @@ router.post(
         earnings = 0.15;
       }
 
-      // Apply fraud penalty (reduce earnings if suspicious but not blocked)
+      // fraud penalty (reduce earnings if suspicious but not blocked)
       if (fraudCheck.score > 40) {
         earnings = earnings * 0.5; // 50% penalty for suspicious activity
       }
 
-      // Create receipt
+      // receipt
       const receipt = await Receipt.create({
         userId,
         imageUrl,
@@ -104,7 +104,7 @@ router.post(
         },
       });
 
-    // Update user stats
+    // user stats
     const user = await User.findByPk(userId);
     if (user) {
       const newTotal = parseFloat(user.totalEarnings.toString()) + earnings;
@@ -132,7 +132,7 @@ router.post(
         newStreak = 1;
       }
 
-      // Determine level
+      // level
       let level: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' = 'Bronze';
       if (receiptsCount >= 500) level = 'Platinum';
       else if (receiptsCount >= 300) level = 'Gold';
@@ -170,7 +170,7 @@ router.post(
         });
       }
 
-      // Update daily challenge progress
+      // daily challenge progress
       const activeChallenge = await DailyChallenge.findOne({
         where: {
           userId,
@@ -187,7 +187,7 @@ router.post(
             status: 'completed',
             completedAt: new Date(),
           });
-          // Add reward
+          // reward
           await user.update({
             availableBalance: newBalance + parseFloat(activeChallenge.rewardAmount.toString()),
           });
@@ -209,7 +209,7 @@ router.post(
   }
 });
 
-// Get all receipts for user
+// all receipts for user
 router.get('/', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -230,7 +230,7 @@ router.get('/', authenticate as any, async (req: AuthRequest, res: Response) => 
   }
 });
 
-// Get receipt statistics
+// receipt statistics
 router.get('/stats', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -281,7 +281,7 @@ router.get('/stats', authenticate as any, async (req: AuthRequest, res: Response
   }
 });
 
-// Get user badges
+// user badges
 router.get('/badges', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -301,7 +301,7 @@ router.get('/badges', authenticate as any, async (req: AuthRequest, res: Respons
   }
 });
 
-// Get daily challenges
+// daily challenges
 router.get('/challenges', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

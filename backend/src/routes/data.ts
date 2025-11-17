@@ -21,7 +21,7 @@ router.get(
       const userId = req.user!.userId;
       const days = parseInt(req.query.days as string) || 30;
 
-      // Check if service is connected
+      // service is connected
       const service = await ConnectedService.findOne({
         where: { userId, provider, isActive: true },
       });
@@ -48,7 +48,7 @@ router.get(
         authTag: service.authTag,
       });
 
-      // Check if token needs refresh
+      // token needs refresh
       const needsRefresh =
         service.tokenExpiresAt && new Date(service.tokenExpiresAt) < new Date();
 
@@ -84,7 +84,7 @@ router.get(
       // Fetch data using adapter
       const data = await AdapterFactory.getNormalizedData(provider, accessToken, { days });
 
-      // Update last sync time
+      // last sync time
       await service.update({ lastSyncAt: new Date() });
 
       // Cache the data for 1 hour
@@ -107,7 +107,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
     const userId = req.user!.userId;
     const days = parseInt(req.query.days as string) || 30;
 
-    // Get all connected services
+    // all connected services
     const services = await ConnectedService.findAll({
       where: { userId, isActive: true },
     });
@@ -143,7 +143,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
           { days }
         );
 
-        // Update last sync time
+        // last sync time
         await service.update({ lastSyncAt: new Date() });
 
         // Cache the data

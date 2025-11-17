@@ -5,9 +5,6 @@ export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
 
-/**
- * Middleware to authenticate requests using JWT
- */
 export const authenticate = (
   req: Request,
   res: Response,
@@ -21,7 +18,7 @@ export const authenticate = (
       return;
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
     (req as any).user = decoded;
@@ -31,9 +28,6 @@ export const authenticate = (
   }
 };
 
-/**
- * Middleware to check if user has specific role
- */
 export const requireRole = (role: 'user' | 'business' | 'admin') => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = (req as any).user as JwtPayload | undefined;
@@ -52,9 +46,6 @@ export const requireRole = (role: 'user' | 'business' | 'admin') => {
   };
 };
 
-/**
- * Optional authentication - attaches user if token is valid but doesn't require it
- */
 export const optionalAuth = (
   req: Request,
   res: Response,
@@ -69,7 +60,6 @@ export const optionalAuth = (
       (req as any).user = decoded;
     }
   } catch (error) {
-    // Silently fail for optional auth
   }
 
   next();

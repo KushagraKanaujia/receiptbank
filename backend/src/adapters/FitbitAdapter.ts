@@ -142,7 +142,7 @@ export class FitbitAdapter {
       this.getSleep(startDate, endDate),
     ]);
 
-    // Calculate averages
+    // averages
     const avgSteps =
       activities.reduce((sum, a) => sum + a.steps, 0) / activities.length;
     const avgCalories =

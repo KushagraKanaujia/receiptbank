@@ -16,7 +16,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
 
     const { amount, paymentMethod, paymentEmail } = req.body;
 
-    // Validate inputs
+    // inputs
     if (!amount || !paymentMethod || !paymentEmail) {
       return res.status(400).json({
         error: 'Missing required fields',
@@ -24,7 +24,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
       });
     }
 
-    // Validate amount
+    // amount
     const withdrawalAmount = parseFloat(amount);
     if (isNaN(withdrawalAmount) || withdrawalAmount < 10) {
       return res.status(400).json({
@@ -33,7 +33,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
       });
     }
 
-    // Validate payment method
+    // payment method
     const validMethods = ['paypal', 'venmo', 'bank_transfer'];
     if (!validMethods.includes(paymentMethod)) {
       return res.status(400).json({
@@ -42,14 +42,14 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
       });
     }
 
-    // Validate email
+    // email
     if (!validatePayPalEmail(paymentEmail)) {
       return res.status(400).json({
         error: 'Invalid email address'
       });
     }
 
-    // Get user and check balance
+    // user and check balance
     const user = await User.findByPk(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -79,7 +79,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
       });
     }
 
-    // Create withdrawal request
+    // withdrawal request
     const withdrawal = await Withdrawal.create({
       userId,
       amount: withdrawalAmount,
@@ -88,7 +88,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
       status: 'pending',
     });
 
-    // Process payout immediately via PayPal (only for PayPal/Venmo)
+    // payout immediately via PayPal (only for PayPal/Venmo)
     if (paymentMethod === 'paypal' || paymentMethod === 'venmo') {
       await withdrawal.update({ status: 'processing' });
 
@@ -100,7 +100,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
       });
 
       if (payoutResult.success) {
-        // Update withdrawal with PayPal details
+        // withdrawal with PayPal details
         await withdrawal.update({
           status: 'completed',
           paypalBatchId: payoutResult.batchId,
@@ -109,7 +109,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
           processedAt: new Date(),
         });
 
-        // Deduct from user balance
+        // from user balance
         await user.update({
           availableBalance: availableBalance - withdrawalAmount,
         });
@@ -146,7 +146,7 @@ router.post('/request', authenticate as any, async (req: AuthRequest, res: Respo
   }
 });
 
-// Get withdrawal history
+// withdrawal history
 router.get('/', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -182,7 +182,7 @@ router.get('/', authenticate as any, async (req: AuthRequest, res: Response) => 
   }
 });
 
-// Get specific withdrawal by ID
+// specific withdrawal by ID
 router.get('/:id', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -247,7 +247,7 @@ router.post('/:id/cancel', authenticate as any, async (req: AuthRequest, res: Re
   }
 });
 
-// Get withdrawal stats
+// withdrawal stats
 router.get('/stats/summary', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

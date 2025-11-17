@@ -37,7 +37,7 @@ export class SyncWorker {
       console.log(`[Sync] Processing sync for ${provider} (user: ${userId})`);
 
       try {
-        // Get service details
+        // service details
         const service = await ConnectedService.findByPk(serviceId);
 
         if (!service || !service.isActive) {
@@ -52,7 +52,7 @@ export class SyncWorker {
           authTag: service.authTag,
         });
 
-        // Check if token needs refresh
+        // token needs refresh
         const needsRefresh =
           service.tokenExpiresAt && new Date(service.tokenExpiresAt) < new Date();
 
@@ -65,7 +65,7 @@ export class SyncWorker {
             tokens.refreshToken
           );
 
-          // Update tokens in database
+          // tokens in database
           const encryptedTokens = OAuthManager.encryptTokens(refreshedTokens);
           await service.update({
             accessToken: encryptedTokens.accessToken,
@@ -93,11 +93,11 @@ export class SyncWorker {
           days: 30,
         });
 
-        // Update cache
+        // cache
         const cacheKey = `data:${userId}:${provider}:30`;
         await redisClient.setex(cacheKey, 3600, JSON.stringify(data));
 
-        // Update last sync time
+        // last sync time
         await service.update({ lastSyncAt: new Date() });
 
         // Log successful sync

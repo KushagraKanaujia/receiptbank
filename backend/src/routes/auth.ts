@@ -8,7 +8,6 @@ import Joi from 'joi';
 
 const router = Router();
 
-// Validation schemas
 const registerSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(8).required(),
@@ -22,10 +21,6 @@ const loginSchema = Joi.object({
   password: Joi.string().required(),
 });
 
-/**
- * POST /api/auth/register
- * Register a new user
- */
 router.post('/register', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { error, value } = registerSchema.validate(req.body);
@@ -36,14 +31,12 @@ router.post('/register', authLimiter, async (req: Request, res: Response): Promi
 
     const { email, password, firstName, lastName, role } = value;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       res.status(409).json({ error: 'User already exists' });
       return;
     }
 
-    // Hash password and create user
     const hashedPassword = await hashPassword(password);
     const user = await User.create({
       email,
@@ -53,7 +46,6 @@ router.post('/register', authLimiter, async (req: Request, res: Response): Promi
       role,
     });
 
-    // Generate JWT token
     const token = generateToken({
       userId: user.id,
       email: user.email,
@@ -77,10 +69,6 @@ router.post('/register', authLimiter, async (req: Request, res: Response): Promi
   }
 });
 
-/**
- * POST /api/auth/login
- * Login user
- */
 router.post('/login', authLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { error, value } = loginSchema.validate(req.body);
@@ -91,21 +79,18 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
 
     const { email, password } = value;
 
-    // Find user
     const user = await User.findOne({ where: { email } });
     if (!user || !user.password) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    // Verify password
     const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    // Generate JWT token
     const token = generateToken({
       userId: user.id,
       email: user.email,
@@ -129,10 +114,6 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
   }
 });
 
-/**
- * GET /api/auth/me
- * Get current user profile
- */
 router.get('/me', authenticate as any, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.userId;

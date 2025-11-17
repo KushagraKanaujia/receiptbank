@@ -151,7 +151,7 @@ export class NotionAdapter {
     const user = await this.getUser();
     const { pages, databases } = await this.search();
 
-    // Get item counts for databases
+    // item counts for databases
     const databasesWithCounts = await Promise.all(
       databases.slice(0, 10).map(async (db) => {
         try {
@@ -163,7 +163,7 @@ export class NotionAdapter {
       })
     );
 
-    // Get recently edited pages
+    // recently edited pages
     const recentlyEdited = pages
       .sort(
         (a, b) =>

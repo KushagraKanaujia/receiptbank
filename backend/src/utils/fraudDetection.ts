@@ -9,10 +9,6 @@ export interface FraudCheck {
   reason?: string;
 }
 
-/**
- * Comprehensive fraud detection for receipt uploads
- * Based on research: avoid false positives (main user complaint)
- */
 export const detectFraud = async (
   userId: string,
   imageBuffer: Buffer,
@@ -22,7 +18,6 @@ export const detectFraud = async (
   let score = 0;
 
   try {
-    // 1. Check for duplicate image (perceptual hash)
     const imageHash = await generateImageHash(imageBuffer);
     const duplicateReceipt = await Receipt.findOne({
       where: { imageHash, status: { [Op.ne]: 'rejected' } },
@@ -31,14 +26,12 @@ export const detectFraud = async (
     if (duplicateReceipt) {
       if (duplicateReceipt.userId === userId) {
         flags.push('duplicate_self');
-        score += 80; // High score = likely fraud
+        score += 80;
       } else {
         flags.push('duplicate_other_user');
-        score += 100; // Definite fraud
+        score += 100;
       }
     }
-
-    // 2. Velocity check (max 20 receipts per day)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const receiptsToday = await Receipt.count({
@@ -56,7 +49,6 @@ export const detectFraud = async (
       score += 30;
     }
 
-    // 3. Rapid submission check (multiple uploads within 5 minutes)
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const recentReceipts = await Receipt.count({
       where: {
@@ -70,34 +62,27 @@ export const detectFraud = async (
       score += 40;
     }
 
-    // 4. EXIF metadata analysis
     if (metadata) {
       const imageMetadata = await extractMetadata(imageBuffer);
 
-      // Check for edited images (no EXIF data often means Photoshop)
       if (!imageMetadata?.exif && imageMetadata?.format === 'jpeg') {
         flags.push('missing_exif');
         score += 20;
       }
 
-      // Check for suspicious dimensions (too perfect = screenshot?)
       if (imageMetadata?.width === imageMetadata?.height) {
         flags.push('square_image');
         score += 15;
       }
 
-      // Very low resolution = likely screenshot of screenshot
       if (imageMetadata && imageMetadata.width && imageMetadata.height) {
         const pixels = imageMetadata.width * imageMetadata.height;
         if (pixels < 200000) {
-          // Less than 0.2MP
           flags.push('low_resolution');
           score += 25;
         }
       }
     }
-
-    // 5. Historical pattern analysis
     const totalReceipts = await Receipt.count({ where: { userId } });
     const rejectedReceipts = await Receipt.count({
       where: { userId, status: 'rejected' },
@@ -108,7 +93,6 @@ export const detectFraud = async (
       score += 50;
     }
 
-    // 6. New account with high activity (suspicious)
     const userReceipts = await Receipt.findAll({
       where: { userId },
       order: [['createdAt', 'ASC']],
@@ -125,8 +109,7 @@ export const detectFraud = async (
       }
     }
 
-    // Decision logic: Be lenient to avoid false positives
-    const passed = score < 70; // Only block if score is 70+
+    const passed = score < 70;
 
     return {
       passed,
@@ -138,7 +121,6 @@ export const detectFraud = async (
     };
   } catch (error: any) {
     console.error('Fraud detection error:', error);
-    // On error, allow upload but log the issue
     return {
       passed: true,
       score: 0,
@@ -147,9 +129,6 @@ export const detectFraud = async (
   }
 };
 
-/**
- * Flag suspicious receipt for manual review
- */
 export const flagForReview = async (receiptId: string, reason: string): Promise<void> => {
   try {
     await Receipt.update(
@@ -164,12 +143,8 @@ export const flagForReview = async (receiptId: string, reason: string): Promise<
   }
 };
 
-/**
- * Check if user should be rate-limited
- */
 export const shouldRateLimit = async (userId: string): Promise<boolean> => {
   try {
-    // Check daily limit
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -183,13 +158,10 @@ export const shouldRateLimit = async (userId: string): Promise<boolean> => {
     return receiptsToday >= 20;
   } catch (error) {
     console.error('Rate limit check error:', error);
-    return false; // On error, don't rate limit
+    return false;
   }
 };
 
-/**
- * Calculate user trust score (0-100, higher = more trustworthy)
- */
 export const calculateTrustScore = async (userId: string): Promise<number> => {
   try {
     const totalReceipts = await Receipt.count({ where: { userId } });
@@ -200,21 +172,20 @@ export const calculateTrustScore = async (userId: string): Promise<number> => {
       where: { userId, status: 'rejected' },
     });
 
-    if (totalReceipts === 0) return 50; // New users start at 50
+    if (totalReceipts === 0) return 50;
 
     const approvalRate = approvedReceipts / totalReceipts;
     const rejectionRate = rejectedReceipts / totalReceipts;
 
     let score = 50;
-    score += approvalRate * 40; // Up to +40 for high approval rate
-    score -= rejectionRate * 60; // Up to -60 for high rejection rate
+    score += approvalRate * 40;
+    score -= rejectionRate * 60;
 
-    // Bonus for consistent users
     if (totalReceipts > 50) score += 10;
     if (totalReceipts > 100) score += 10;
 
     return Math.max(0, Math.min(100, Math.round(score)));
   } catch (error) {
-    return 50; // Default to neutral score on error
+    return 50;
   }
 };

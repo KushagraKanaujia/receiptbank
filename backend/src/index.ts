@@ -25,7 +25,6 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 3001;
 
-// Initialize Sentry for error tracking
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
@@ -34,10 +33,7 @@ if (process.env.SENTRY_DSN) {
   });
 }
 
-// Middleware
 app.use(helmet());
-
-// CORS with environment-based whitelist
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:3000',
   'http://localhost:3002',
@@ -57,21 +53,16 @@ app.use(
   })
 );
 
-// Request logging
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined'));
 } else {
   app.use(morgan('dev'));
 }
 
-// Body parsing with limits
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Apply rate limiting
 app.use('/api', generalLimiter);
-
-// Enhanced health check endpoint
 app.get('/health', async (_req, res) => {
   const healthCheck = {
     status: 'ok',
@@ -90,7 +81,6 @@ app.get('/health', async (_req, res) => {
   };
 
   try {
-    // Check database connection
     await sequelize.authenticate();
     healthCheck.services.database = 'connected';
   } catch (error) {
@@ -99,7 +89,6 @@ app.get('/health', async (_req, res) => {
   }
 
   try {
-    // Check Redis connection
     const redisPing = await redis.ping();
     healthCheck.services.redis = redisPing === 'PONG' ? 'connected' : 'disconnected';
   } catch (error) {
@@ -111,21 +100,16 @@ app.get('/health', async (_req, res) => {
   res.status(statusCode).json(healthCheck);
 });
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/oauth', oauthRoutes);
-app.use('/api/data', authenticate as any, dataRoutes); // Protected data routes
+app.use('/api/data', authenticate as any, dataRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/receipts', receiptsRoutes);
 app.use('/api/withdrawals', withdrawalsRoutes);
-app.use('/api/admin', adminRoutes); // Admin routes
+app.use('/api/admin', adminRoutes);
 
-// Error tracking will be done in error handler below
-
-// Enhanced error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  // Log error details
   console.error('Error occurred:', {
     path: req.path,
     method: req.method,
@@ -133,15 +117,12 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 
-  // Send error to Sentry in production
   if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
     Sentry.captureException(err);
   }
 
-  // Determine status code
   const statusCode = err.statusCode || err.status || 500;
 
-  // Send error response
   res.status(statusCode).json({
     error: err.name || 'ServerError',
     message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred',
@@ -150,29 +131,20 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
   });
 });
 
-// 404 handler
 app.use((_req: express.Request, res: express.Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Initialize database and start server
 const startServer = async () => {
   try {
-    // Test database connection
     await testConnection();
 
-    // Sync database models
-    // Set force: true to drop and recreate tables (WARNING: only for development)
     const forceSync = process.env.NODE_ENV === 'development' && process.env.DB_FORCE_SYNC === 'true';
     await syncDatabase(forceSync);
 
-    // Start Express server
     app.listen(PORT, () => {
-      console.log(`\n🚀 Server running on port ${PORT}`);
-      console.log(`📍 API Base URL: http://localhost:${PORT}/api`);
-      console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log('\n✅ Ready to accept requests\n');
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
@@ -180,7 +152,6 @@ const startServer = async () => {
   }
 };
 
-// Handle graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing HTTP server');
   await sequelize.close();

@@ -1,7 +1,7 @@
 import Queue from 'bull';
 import redis from './redis';
 
-// Create receipt processing queue
+// receipt processing queue
 export const receiptQueue = new Queue('receipt-processing', {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
@@ -26,7 +26,7 @@ export interface ReceiptProcessingJob {
   imagePath: string;
 }
 
-// Process receipt jobs
+// receipt jobs
 receiptQueue.process(async (job) => {
   const { receiptId, userId, imageUrl, imagePath } = job.data as ReceiptProcessingJob;
 

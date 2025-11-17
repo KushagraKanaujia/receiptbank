@@ -20,13 +20,13 @@ router.get(
       const { provider } = req.params as { provider: ServiceProvider };
       const userId = req.user!.userId;
 
-      // Generate state token for CSRF protection
+      // state token for CSRF protection
       const state = crypto.randomBytes(32).toString('hex');
 
       // Store state in Redis with user ID (expires in 10 minutes)
       await redisClient.setex(`oauth_state:${state}`, 600, userId);
 
-      // Get authorization URL
+      // authorization URL
       const authUrl = OAuthManager.getAuthorizationUrl(provider, state);
 
       res.json({ authUrl });
@@ -64,18 +64,18 @@ router.get('/callback/:provider', async (req: Request, res: Response): Promise<v
     // Exchange code for tokens
     const tokens = await OAuthManager.exchangeCodeForTokens(provider, code as string);
 
-    // Get user info from provider
+    // user info from provider
     const userInfo = await OAuthManager.getUserInfo(provider, tokens.accessToken);
 
     // Encrypt tokens
     const encryptedTokens = OAuthManager.encryptTokens(tokens);
 
-    // Calculate token expiration
+    // token expiration
     const tokenExpiresAt = tokens.expiresIn
       ? new Date(Date.now() + tokens.expiresIn * 1000)
       : null;
 
-    // Check if service is already connected
+    // service is already connected
     const existing = await ConnectedService.findOne({
       where: { userId, provider },
     });
@@ -83,7 +83,7 @@ router.get('/callback/:provider', async (req: Request, res: Response): Promise<v
     let service: ConnectedService;
 
     if (existing) {
-      // Update existing connection
+      // existing connection
       service = await existing.update({
         providerUserId: userInfo.id,
         accessToken: encryptedTokens.accessToken,
@@ -96,7 +96,7 @@ router.get('/callback/:provider', async (req: Request, res: Response): Promise<v
         metadata: userInfo,
       });
     } else {
-      // Create new connection
+      // new connection
       service = await ConnectedService.create({
         userId,
         provider,

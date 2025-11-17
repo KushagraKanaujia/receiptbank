@@ -6,7 +6,6 @@ import { Op } from 'sequelize';
 
 const router = Router();
 
-// Middleware to check admin role
 const requireAdmin = (req: AuthRequest, res: Response, next: Function) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'business') {
     throw new AuthorizationError('Admin access required');
@@ -14,10 +13,6 @@ const requireAdmin = (req: AuthRequest, res: Response, next: Function) => {
   next();
 };
 
-/**
- * GET /api/admin/stats
- * Get platform statistics
- */
 router.get('/stats', authenticate as any, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const [
@@ -38,14 +33,12 @@ router.get('/stats', authenticate as any, requireAdmin, async (req: AuthRequest,
       Withdrawal.count({ where: { status: 'pending' } }),
     ]);
 
-    // Calculate total earnings
     const receipts = await Receipt.findAll({
       where: { status: 'approved' },
       attributes: ['earnings'],
     });
     const totalEarnings = receipts.reduce((sum, r) => sum + parseFloat(String(r.earnings || 0)), 0);
 
-    // Calculate total payouts
     const withdrawals = await Withdrawal.findAll({
       where: { status: 'completed' },
       attributes: ['amount'],
@@ -69,7 +62,7 @@ router.get('/stats', authenticate as any, requireAdmin, async (req: AuthRequest,
       financials: {
         totalEarnings: totalEarnings.toFixed(2),
         totalPayouts: totalPayouts.toFixed(2),
-        platformRevenue: (totalEarnings * 0.05).toFixed(2), // 5% platform fee
+        platformRevenue: (totalEarnings * 0.05).toFixed(2),
       },
     });
   } catch (error: any) {
@@ -78,10 +71,6 @@ router.get('/stats', authenticate as any, requireAdmin, async (req: AuthRequest,
   }
 });
 
-/**
- * GET /api/admin/receipts
- * Get all receipts with filters
- */
 router.get('/receipts', authenticate as any, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const {
@@ -136,10 +125,6 @@ router.get('/receipts', authenticate as any, requireAdmin, async (req: AuthReque
   }
 });
 
-/**
- * PATCH /api/admin/receipts/:id/approve
- * Approve a receipt
- */
 router.patch('/receipts/:id/approve', authenticate as any, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -155,14 +140,12 @@ router.patch('/receipts/:id/approve', authenticate as any, requireAdmin, async (
       return res.status(400).json({ error: 'Receipt is not pending' });
     }
 
-    // Update receipt
     await receipt.update({
       status: 'approved',
       earnings: earnings || receipt.earnings,
       processedAt: new Date(),
     });
 
-    // Update user balance
     const user = await User.findByPk(receipt.userId);
     if (user) {
       const earningsAmount = parseFloat(earnings || receipt.earnings || '0');
@@ -183,10 +166,6 @@ router.patch('/receipts/:id/approve', authenticate as any, requireAdmin, async (
   }
 });
 
-/**
- * PATCH /api/admin/receipts/:id/reject
- * Reject a receipt
- */
 router.patch('/receipts/:id/reject', authenticate as any, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -218,10 +197,6 @@ router.patch('/receipts/:id/reject', authenticate as any, requireAdmin, async (r
   }
 });
 
-/**
- * GET /api/admin/users
- * Get all users
- */
 router.get('/users', authenticate as any, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { limit = 50, offset = 0, search } = req.query;
@@ -256,10 +231,6 @@ router.get('/users', authenticate as any, requireAdmin, async (req: AuthRequest,
   }
 });
 
-/**
- * GET /api/admin/withdrawals
- * Get all withdrawal requests
- */
 router.get('/withdrawals', authenticate as any, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { status, limit = 50, offset = 0 } = req.query;

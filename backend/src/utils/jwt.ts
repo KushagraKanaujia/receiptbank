@@ -12,11 +12,6 @@ export interface JwtPayload {
   role?: 'user' | 'business' | 'admin';
 }
 
-/**
- * Generate JWT token
- * @param payload - User information to encode
- * @returns Signed JWT token
- */
 export const generateToken = (payload: JwtPayload): string => {
   const options: SignOptions = {
     expiresIn: JWT_EXPIRES_IN as any,
@@ -24,11 +19,6 @@ export const generateToken = (payload: JwtPayload): string => {
   return jwt.sign(payload, JWT_SECRET, options);
 };
 
-/**
- * Verify and decode JWT token
- * @param token - JWT token to verify
- * @returns Decoded payload
- */
 export const verifyToken = (token: string): JwtPayload => {
   try {
     return jwt.verify(token, JWT_SECRET) as JwtPayload;
@@ -37,11 +27,6 @@ export const verifyToken = (token: string): JwtPayload => {
   }
 };
 
-/**
- * Decode JWT without verification (use cautiously)
- * @param token - JWT token to decode
- * @returns Decoded payload or null
- */
 export const decodeToken = (token: string): JwtPayload | null => {
   return jwt.decode(token) as JwtPayload | null;
 };

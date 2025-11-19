@@ -1,6 +1,6 @@
-# Contributing to DataHub
+# Contributing to ReceiptBank
 
-Thank you for your interest in contributing to DataHub! We're building the future of data ownership together.
+Thanks for wanting to contribute to ReceiptBank! We're building the future of data ownership together.
 
 ## Code of Conduct
 
@@ -40,8 +40,8 @@ Be respectful, inclusive, and collaborative. We're here to empower people, not t
 
 \`\`\`bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/datahub.git
-cd datahub
+git clone https://github.com/YOUR_USERNAME/receiptbank.git
+cd receiptbank
 
 # Install dependencies
 cd backend && npm install
@@ -86,8 +86,8 @@ Good examples:
 
 ## Questions?
 
-Join our Discord or email hello@datahub.app
+Open an issue or start a discussion on GitHub
 
 ---
 
-**Thank you for helping build a fairer data economy!** 🚀
+**Thanks for helping build a fairer data economy!**

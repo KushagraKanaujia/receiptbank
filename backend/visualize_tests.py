@@ -192,7 +192,7 @@ fig.suptitle('ReceiptBank API - Test Suite Analysis & Code Coverage Report',
              fontsize=18, fontweight='bold', y=0.98)
 
 # Add footer
-fig.text(0.5, 0.01, '🤖 Generated with Claude Code | Test Framework: Jest + Supertest | Node.js Backend',
+fig.text(0.5, 0.01, 'Test Framework: Jest + Supertest | Node.js Backend',
          ha='center', fontsize=10, style='italic', color='#7f8c8d')
 
 # Save the figure

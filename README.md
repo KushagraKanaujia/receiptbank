@@ -60,13 +60,16 @@ ReceiptBank is an **open-source platform** where you upload receipts and get pai
 ### For Users
 
 - **📱 Instant Upload**: Take photo → AI processes → money added
+- **🤖 AI-Powered OCR**: Automatically extracts merchant, amount, and category
+- **⚡ Real-Time Preview**: See your earnings before you upload
 - **💵 Realistic Earnings**:
   - Grocery/Retail: $0.08-0.15 per receipt
   - Electronics: $1.50-2.50 per receipt
   - Coffee/Fast Food: $0.02-0.05 per receipt
-- **📊 Earnings Dashboard**: Track income, view trends
-- **🎯 Smart Insights**: "Upload electronics receipts for 4x earnings"
+- **📊 Live Stats Dashboard**: See platform activity in real-time
+- **🎯 Smart Insights**: AI suggests high-value receipt categories
 - **🔐 Privacy First**: Data is anonymized and aggregated
+- **📸 Image Validation**: Quality checks ensure receipts are readable
 
 ### For Businesses
 
@@ -113,11 +116,16 @@ Based on real market research:
 - PostgreSQL
 - Redis
 - Stripe (payouts)
+- **Tesseract.js (OCR)** ✨
+- Sharp (image processing)
 
-**Planned:**
-- OCR API (Google Vision / AWS Textract)
-- Fraud detection (receipt deduplication)
-- Payment processing (Stripe Connect)
+**Features:**
+- ✅ OCR text extraction
+- ✅ Receipt validation
+- ✅ Fraud detection
+- ✅ Real-time stats
+- ⏳ Payment processing (Stripe Connect)
+- ⏳ Mobile apps (React Native)
 
 ---
 

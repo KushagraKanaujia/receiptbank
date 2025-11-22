@@ -5,11 +5,58 @@ import { upload } from '../middleware/upload';
 import { uploadImage, generateImageHash } from '../utils/imageStorage';
 import { extractReceiptData } from '../utils/ocr';
 import { detectFraud, shouldRateLimit } from '../utils/fraudDetection';
+import { ocrService } from '../services/ocrService';
 import { Op } from 'sequelize';
 
 const router = express.Router();
 
-// receipt with image, OCR, and fraud detection
+// Preview receipt and calculate potential earnings (no save)
+router.post(
+  '/preview',
+  authenticate as any,
+  upload.single('receipt'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'Receipt image is required' });
+      }
+
+      // Validate receipt
+      const validation = await ocrService.validateReceipt(file.buffer);
+      if (!validation.valid) {
+        return res.status(400).json({
+          valid: false,
+          message: validation.reason,
+        });
+      }
+
+      // Process receipt
+      const ocrData = await ocrService.processReceipt(file.buffer);
+      const earnings = ocrData.amount && ocrData.amount > 0
+        ? ocrService.calculateEarnings(ocrData.amount, ocrData.category || 'retail')
+        : 0.10;
+
+      res.json({
+        valid: true,
+        preview: {
+          merchant: ocrData.merchant,
+          amount: ocrData.amount,
+          category: ocrData.category,
+          estimatedEarnings: earnings,
+          confidence: ocrData.confidence,
+          date: ocrData.date,
+        },
+        message: `You'll earn approximately $${earnings.toFixed(2)} from this receipt`,
+      });
+    } catch (error: any) {
+      console.error('Error previewing receipt:', error);
+      res.status(500).json({ error: 'Failed to preview receipt', details: error.message });
+    }
+  }
+);
+
+// Upload receipt with image, OCR, and fraud detection
 router.post(
   '/upload',
   authenticate as any,
@@ -52,33 +99,53 @@ router.post(
       // image hash for duplicate detection
       const imageHash = await generateImageHash(file.buffer);
 
-      // receipt data using OCR (if MINDEE_API_KEY is configured)
-      let ocrData = null;
-      let merchant = 'Unknown';
-      let category = 'Other';
-      let amount = 0;
-
-      if (process.env.MINDEE_API_KEY) {
-        try {
-          ocrData = await extractReceiptData(imageUrl);
-          merchant = ocrData.merchant || 'Unknown';
-          category = ocrData.category || 'Other';
-          amount = ocrData.total || 0;
-        } catch (error) {
-          console.error('OCR failed, using defaults:', error);
-        }
+      // Validate receipt image quality first
+      const validation = await ocrService.validateReceipt(file.buffer);
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: 'Invalid receipt',
+          message: validation.reason,
+        });
       }
 
-      // earnings based on category
-      let earnings = 0.10; // Default
-      if (category === 'Electronics') {
-        earnings = 2.00;
-      } else if (category === 'Grocery') {
-        earnings = 0.12;
-      } else if (category === 'Restaurant') {
-        earnings = 0.05;
-      } else if (category === 'Retail') {
-        earnings = 0.15;
+      // Extract receipt data using OCR
+      let ocrData = null;
+      let merchant = 'Unknown';
+      let category = 'retail';
+      let amount = 0;
+
+      try {
+        ocrData = await ocrService.processReceipt(file.buffer);
+        merchant = ocrData.merchant || 'Unknown';
+        category = ocrData.category || 'retail';
+        amount = ocrData.amount || 0;
+
+        console.log('OCR Success:', {
+          merchant,
+          category,
+          amount,
+          confidence: ocrData.confidence,
+        });
+      } catch (error) {
+        console.error('OCR processing failed:', error);
+        // Continue with defaults if OCR fails
+      }
+
+      // Calculate earnings based on amount and category
+      let earnings = 0.10; // Default fallback
+      if (amount > 0) {
+        earnings = ocrService.calculateEarnings(amount, category);
+      } else {
+        // Fallback to category-based estimates if no amount detected
+        if (category === 'electronics') {
+          earnings = 2.00;
+        } else if (category === 'grocery') {
+          earnings = 0.12;
+        } else if (category === 'restaurant') {
+          earnings = 0.05;
+        } else if (category === 'retail') {
+          earnings = 0.15;
+        }
       }
 
       // fraud penalty (reduce earnings if suspicious but not blocked)
@@ -301,7 +368,75 @@ router.get('/badges', authenticate as any, async (req: AuthRequest, res: Respons
   }
 });
 
-// daily challenges
+// Public stats dashboard (no auth required)
+router.get('/public-stats', async (req, res: Response) => {
+  try {
+    const totalUsers = await User.count();
+    const totalReceipts = await Receipt.count({ where: { status: 'approved' } });
+    const totalEarningsPaid = await User.sum('totalEarnings');
+    const receiptsToday = await Receipt.count({
+      where: {
+        createdAt: {
+          [Op.gte]: new Date(new Date().setHours(0, 0, 0, 0)),
+        },
+        status: 'approved',
+      },
+    });
+
+    // Recent receipts (anonymized)
+    const recentReceipts = await Receipt.findAll({
+      where: { status: 'approved' },
+      order: [['createdAt', 'DESC']],
+      limit: 10,
+      attributes: ['category', 'earnings', 'createdAt'],
+    });
+
+    // Category breakdown
+    const categoryStats = await Receipt.findAll({
+      where: { status: 'approved' },
+      attributes: [
+        'category',
+        [Op.fn('COUNT', Op.col('id')), 'count'],
+        [Op.fn('SUM', Op.col('earnings')), 'totalEarnings'],
+      ],
+      group: ['category'],
+      raw: true,
+    });
+
+    res.json({
+      platform: {
+        totalUsers,
+        totalReceipts,
+        totalEarningsPaid: Math.round(totalEarningsPaid * 100) / 100,
+        receiptsToday,
+      },
+      recentActivity: recentReceipts.map((r: any) => ({
+        category: r.category,
+        earnings: r.earnings,
+        timeAgo: getTimeAgo(r.createdAt),
+      })),
+      categories: categoryStats,
+    });
+  } catch (error: any) {
+    console.error('Error fetching public stats:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// Helper function for time ago
+function getTimeAgo(date: Date): string {
+  const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+// Daily challenges
 router.get('/challenges', authenticate as any, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
